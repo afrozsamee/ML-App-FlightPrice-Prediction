@@ -2,144 +2,114 @@ import streamlit as st
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import LabelEncoder
-from sklearn.ensemble import RandomForestClassifier
+from xgboost import XGBRegressor
+
 le = LabelEncoder()
 
-st.title('🤖 Machine Learning App')
+st.title("✈️ Flight Price Prediction App")
+st.info("Predict flight ticket prices using XGBoost!")
 
-st.info('This is app builds a machine learning model!')
+# LOAD DATA
+@st.cache_data
+def load_data():
+    df = pd.read_excel("https://github.com/afrozsamee/Predictions_price_of_FlightTickets/raw/master/Data_Train.xlsx")
+    return df
 
-with st.expander('Data'):
-  st.write('**Raw data**')
-  df = pd.read_excel('https://github.com/afrozsamee/Predictions_price_of_FlightTickets/blob/master/Data_Train.xlsx')
-  df
-  
-  df.dropna(inplace = True)
-  df['Date_of_Journey']=pd.to_datetime(df['Date_of_Journey'])
-  df['Day']=df['Date_of_Journey'].apply(lambda x: x.day)
-  df['Month']=df['Date_of_Journey'].apply(lambda x: x.month)
-  df['Year']=df['Date_of_Journey'].apply(lambda x: x.year)
-  
-  
-  df['Arrival_Time']=pd.to_datetime(df['Arrival_Time'])
-  df['Arrival Time']=df['Arrival_Time'].apply(lambda x: x.hour)
-  df['Arrival Day']=df['Arrival_Time'].apply(lambda x: x.day)
-  df['Arrival Month']=df['Arrival_Time'].apply(lambda x: x.month)
-  df['Arrival Year']=df['Arrival_Time'].apply(lambda x: x.year)
-  
-  df['Airline']=le.fit_transform(df['Airline'])
-  df['Source']=le.fit_transform(df['Source'])
-  df['Destination']=le.fit_transform(df['Destination'])
-  df['Route']=le.fit_transform(df['Route'])
-  df['Dep_Time']=le.fit_transform(df['Dep_Time'])
-  df['Duration']=le.fit_transform(df['Duration'])
-  df['Total_Stops']=le.fit_transform(df['Total_Stops'])
-  df['Additional_Info']=le.fit_transform(df['Additional_Info'])
+df = load_data()
 
-  st.write('**X**')
-  X_raw = df.drop('Price', axis=1)
-  X_raw
+# ========== DATA PREVIEW ==========
+with st.expander("Dataset Preview"):
+    st.dataframe(df.head())
 
-  st.write('**y**')
-  y_raw = df.Price
-  y_raw
+# ========== FEATURE ENGINEERING ==========
+def preprocess(data):
+    data = data.copy()
+    data.dropna(inplace=True)
 
-with st.expander('Data visualization'):
-  st.scatter_chart(data=df, x='bill_length_mm', y='body_mass_g', color='species')
+    # Date_of_Journey
+    data['Date_of_Journey'] = pd.to_datetime(data['Date_of_Journey'])
+    data['Journey_Day'] = data['Date_of_Journey'].dt.day
+    data['Journey_Month'] = data['Date_of_Journey'].dt.month
+    data.drop('Date_of_Journey', axis=1, inplace=True)
 
-# Input features
+    # Dep_Time
+    data['Dep_Time'] = pd.to_datetime(data['Dep_Time'])
+    data['Dep_Hour'] = data['Dep_Time'].dt.hour
+    data['Dep_Min'] = data['Dep_Time'].dt.minute
+    data.drop('Dep_Time', axis=1, inplace=True)
+
+    # Arrival_Time
+    data['Arrival_Time'] = pd.to_datetime(data['Arrival_Time'])
+    data['Arr_Hour'] = data['Arrival_Time'].dt.hour
+    data['Arr_Min'] = data['Arrival_Time'].dt.minute
+    data.drop('Arrival_Time', axis=1, inplace=True)
+
+    # Duration
+    data['Duration'] = data['Duration'].astype(str)
+    data['Dur_Hour'] = data['Duration'].str.extract(r'(\d+)h').fillna(0).astype(int)
+    data['Dur_Min'] = data['Duration'].str.extract(r'(\d+)m').fillna(0).astype(int)
+    data.drop('Duration', axis=1, inplace=True)
+
+    # Encode categorical columns
+    cat_cols = ["Airline", "Source", "Destination", "Route", "Total_Stops", "Additional_Info"]
+    for col in cat_cols:
+        data[col] = le.fit_transform(data[col])
+
+    return data
+
+df_processed = preprocess(df)
+
+X = df_processed.drop("Price", axis=1)
+y = df_processed["Price"]
+
+# ========== SIDEBAR INPUTS ==========
 with st.sidebar:
-  st.header('Input features')
-  island = st.selectbox('Island', ('Biscoe', 'Dream', 'Torgersen'))
-  bill_length_mm = st.slider('Bill length (mm)', 32.1, 59.6, 43.9)
-  bill_depth_mm = st.slider('Bill depth (mm)', 13.1, 21.5, 17.2)
-  flipper_length_mm = st.slider('Flipper length (mm)', 172.0, 231.0, 201.0)
-  body_mass_g = st.slider('Body mass (g)', 2700.0, 6300.0, 4207.0)
-  gender = st.selectbox('Gender', ('male', 'female'))
-  
-  # Create a DataFrame for the input features
-  data = {'island': island,
-          'bill_length_mm': bill_length_mm,
-          'bill_depth_mm': bill_depth_mm,
-          'flipper_length_mm': flipper_length_mm,
-          'body_mass_g': body_mass_g,
-          'sex': gender}
-  input_df = pd.DataFrame(data, index=[0])
-  input_penguins = pd.concat([input_df, X_raw], axis=0)
+    st.header("Flight Details")
 
-with st.expander('Input features'):
-  st.write('**Input penguin**')
-  input_df
-  st.write('**Combined penguins data**')
-  input_penguins
+    Airline = st.selectbox("Airline", df["Airline"].unique())
+    Source = st.selectbox("Source", df["Source"].unique())
+    Destination = st.selectbox("Destination", df["Destination"].unique())
+    Total_Stops = st.selectbox("Stops", df["Total_Stops"].unique())
+    Journey_Day = st.slider("Journey Day", 1, 31, 10)
+    Journey_Month = st.slider("Journey Month", 1, 12, 5)
+    Dep_Hour = st.slider("Departure Hour", 0, 23, 10)
+    Dep_Min = st.slider("Departure Min", 0, 59, 30)
+    Arr_Hour = st.slider("Arrival Hour", 0, 23, 18)
+    Arr_Min = st.slider("Arrival Min", 0, 59, 30)
+    Dur_Hour = st.slider("Duration (Hours)", 0, 47, 2)
+    Dur_Min = st.slider("Duration (Minutes)", 0, 59, 30)
 
+    input_data = {
+        "Airline": Airline,
+        "Source": Source,
+        "Destination": Destination,
+        "Route": "None",
+        "Total_Stops": Total_Stops,
+        "Additional_Info": "No info",
+        "Journey_Day": Journey_Day,
+        "Journey_Month": Journey_Month,
+        "Dep_Hour": Dep_Hour,
+        "Dep_Min": Dep_Min,
+        "Arr_Hour": Arr_Hour,
+        "Arr_Min": Arr_Min,
+        "Dur_Hour": Dur_Hour,
+        "Dur_Min": Dur_Min
+    }
 
-# Data preparation
-# Encode X
-encode = ['island', 'sex']
-df_penguins = pd.get_dummies(input_penguins, prefix=encode)
+    input_df = pd.DataFrame([input_data])
+    input_transformed = preprocess(pd.concat([df.drop("Price", axis=1), input_df], axis=0)).tail(1)
 
-X = df_penguins[1:]
-input_row = df_penguins[:1]
+# ========== SHOW INPUT ==========
+with st.expander("User Input Preview"):
+    st.dataframe(input_df)
 
-# Encode y
-target_mapper = {'Adelie': 0,
-                 'Chinstrap': 1,
-                 'Gentoo': 2}
-def target_encode(val):
-  return target_mapper[val]
+# ========== MODEL TRAINING ==========
+model = XGBRegressor(n_estimators=500, learning_rate=0.1)
+model.fit(X, y)
 
-y = y_raw.apply(target_encode)
+# ========== PREDICTION ==========
+price_pred = model.predict(input_transformed)[0]
 
-with st.expander('Data preparation'):
-  st.write('**Encoded X (input penguin)**')
-  input_row
-  st.write('**Encoded y**')
-  y
-
-
-# Model training and inference
-## Train the ML model
-clf = RandomForestClassifier()
-clf.fit(X, y)
-
-## Apply model to make predictions
-prediction = clf.predict(input_row)
-prediction_proba = clf.predict_proba(input_row)
-
-df_prediction_proba = pd.DataFrame(prediction_proba)
-df_prediction_proba.columns = ['Adelie', 'Chinstrap', 'Gentoo']
-df_prediction_proba.rename(columns={0: 'Adelie',
-                                 1: 'Chinstrap',
-                                 2: 'Gentoo'})
-
-# Display predicted species
-st.subheader('Predicted Species')
-st.dataframe(df_prediction_proba,
-             column_config={
-               'Adelie': st.column_config.ProgressColumn(
-                 'Adelie',
-                 format='%f',
-                 width='medium',
-                 min_value=0,
-                 max_value=1
-               ),
-               'Chinstrap': st.column_config.ProgressColumn(
-                 'Chinstrap',
-                 format='%f',
-                 width='medium',
-                 min_value=0,
-                 max_value=1
-               ),
-               'Gentoo': st.column_config.ProgressColumn(
-                 'Gentoo',
-                 format='%f',
-                 width='medium',
-                 min_value=0,
-                 max_value=1
-               ),
-             }, hide_index=True)
-
-
-penguins_species = np.array(['Adelie', 'Chinstrap', 'Gentoo'])
-st.success(str(penguins_species[prediction][0]))
+# ========== RESULT ==========
+st.subheader("💰 Predicted Flight Price")
+st.success(f"₹ {price_pred:,.2f}")
