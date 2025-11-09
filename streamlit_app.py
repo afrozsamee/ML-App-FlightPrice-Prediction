@@ -64,40 +64,45 @@ y = df_processed["Price"]
 
 # ========== SIDEBAR INPUTS ==========
 with st.sidebar:
-    st.header("Flight Details")
+    st.header("✈️ Enter Flight Details")
 
     Airline = st.selectbox("Airline", df["Airline"].unique())
     Source = st.selectbox("Source", df["Source"].unique())
     Destination = st.selectbox("Destination", df["Destination"].unique())
     Total_Stops = st.selectbox("Stops", df["Total_Stops"].unique())
-    Journey_Day = st.slider("Journey Day", 1, 31, 10)
-    Journey_Month = st.slider("Journey Month", 1, 12, 5)
-    Dep_Hour = st.slider("Departure Hour", 0, 23, 10)
-    Dep_Min = st.slider("Departure Min", 0, 59, 30)
-    Arr_Hour = st.slider("Arrival Hour", 0, 23, 18)
-    Arr_Min = st.slider("Arrival Min", 0, 59, 30)
-    Dur_Hour = st.slider("Duration (Hours)", 0, 47, 2)
-    Dur_Min = st.slider("Duration (Minutes)", 0, 59, 30)
+    Additional_Info = st.selectbox("Additional Info", df["Additional_Info"].unique())
+
+    # Raw date input
+    Date_of_Journey = st.date_input("Date of Journey")
+
+    # Time selectors formatted as the dataset requires
+    Dep_Time = st.time_input("Departure Time")
+    Arrival_Time = st.time_input("Arrival Time")
+
+    # Duration (raw format to match dataset)
+    Dur_Hour = st.number_input("Duration Hours", min_value=0, max_value=50, value=2)
+    Dur_Min = st.number_input("Duration Minutes", min_value=0, max_value=59, value=30)
+
+    Duration = f"{int(Dur_Hour)}h {int(Dur_Min)}m"
 
     input_data = {
         "Airline": Airline,
+        "Date_of_Journey": Date_of_Journey.strftime("%d/%m/%Y"),
         "Source": Source,
         "Destination": Destination,
-        "Route": "None",
+        "Route": "Not Available",
+        "Dep_Time": Dep_Time.strftime("%H:%M"),
+        "Arrival_Time": Arrival_Time.strftime("%H:%M"),
+        "Duration": Duration,
         "Total_Stops": Total_Stops,
-        "Additional_Info": "No info",
-        "Journey_Day": Journey_Day,
-        "Journey_Month": Journey_Month,
-        "Dep_Hour": Dep_Hour,
-        "Dep_Min": Dep_Min,
-        "Arr_Hour": Arr_Hour,
-        "Arr_Min": Arr_Min,
-        "Dur_Hour": Dur_Hour,
-        "Dur_Min": Dur_Min
+        "Additional_Info": Additional_Info
     }
 
     input_df = pd.DataFrame([input_data])
-    input_transformed = preprocess(pd.concat([df.drop("Price", axis=1), input_df], axis=0)).tail(1)
+
+# Preprocess input by appending to df
+input_transformed = preprocess(pd.concat([df.drop("Price", axis=1), input_df], axis=0)).tail(1)
+
 
 # ========== SHOW INPUT ==========
 with st.expander("User Input Preview"):
@@ -108,6 +113,8 @@ model = XGBRegressor(n_estimators=500, learning_rate=0.1)
 model.fit(X, y)
 
 # ========== PREDICTION ==========
+# align columns to training data
+input_transformed = input_transformed[X.columns]
 price_pred = model.predict(input_transformed)[0]
 
 # ========== RESULT ==========
