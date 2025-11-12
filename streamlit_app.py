@@ -13,7 +13,7 @@ from xgboost import XGBRegressor
 st.set_page_config(page_title="Flight Price Predictor", page_icon="✈️", layout="wide")
 
 st.title("✈️ Flight Price Prediction App")
-st.caption("Built with ❤️ using Streamlit + XGBoost")
+st.caption("Built using Streamlit + XGBoost")
 st.info("Predict flight ticket prices and view model validation & explainability insights.")
 
 # =====================
