@@ -19,12 +19,12 @@ st.info("Predict flight ticket prices and view model validation & explainability
 # =====================
 # 📂 LOAD DATA
 # =====================
+
 @st.cache_data
 def load_data():
-    df = pd.read_excel(
-        "https://github.com/afrozsamee/Predictions_price_of_FlightTickets/raw/master/Data_Train.xlsx"
-    )
+    df = pd.read_excel("https://github.com/afrozsamee/Predictions_price_of_FlightTickets/raw/master/Data_Train.xlsx")
     return df
+
 
 df = load_data()
 
