@@ -1,23 +1,71 @@
-# 📦 Streamlit App for prediction of flight prices 
+# ✈️ Flight Price Prediction App
+
+A **Machine Learning web app** built with **Streamlit** that predicts flight ticket prices based on travel details such as airline, source, destination, date, time, and flight duration.  
+This project demonstrates **data preprocessing, feature engineering, model validation, and explainability** using **XGBoost**.
+
+---
+
+## 🚀 Demo App
+
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://your-streamlit-app-link-here.streamlit.app)
 
 
-Description of the app ...
+---
 
-## Demo App
+## 🧠 Project Overview
 
-[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://app-starter-kit.streamlit.app/)
+This interactive app allows users to:
+- Input flight details (airline, route, stops, duration, etc.)
+- Predict the **estimated ticket price**
+- Visualize **model validation metrics** (R², MAE, RMSE)
+- Understand **feature importance** behind predictions
+- Download a **personalized prediction report**
 
-## GitHub Codespaces
+The goal is to make machine learning results **transparent, explainable, and visually engaging** for end users and recruiters.
 
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/streamlit/app-starter-kit?quickstart=1)
+---
 
-## Section Heading
+## 🏗️ Tech Stack
 
-This is filler text, please replace this with text for this section.
+| Category | Tools / Libraries |
+|-----------|------------------|
+| **Frontend** | Streamlit |
+| **Machine Learning** | XGBoost, Scikit-learn |
+| **Data Handling** | Pandas, NumPy |
+| **Visualization** | Matplotlib, Streamlit Charts |
+| **Dataset Source** | Kaggle / Open Flight Ticket Price Dataset |
 
-## Further Reading
+---
 
-This is filler text, please replace this with a explanatory text about further relevant resources for this repo
-- Resource 1
-- Resource 2
-- Resource 3
+## ⚙️ Features
+
+✅ **Interactive Flight Input Form** — Enter travel details in a simple UI  
+✅ **"Predict" Button** — One-click price prediction  
+✅ **Model Validation Dashboard** — R², MAE, and RMSE metrics displayed  
+✅ **Actual vs Predicted Plot** — Shows how close predictions are to real prices  
+✅ **Feature Importance Chart** — Explains which features affect price the most  
+✅ **Downloadable Report** — Export personalized prediction as a CSV  
+✅ **Fast Loading** — Cached dataset and preprocessing for better UX  
+
+---
+
+## 📊 Model Insights
+
+- **Algorithm Used:** XGBoost Regressor  
+- **Training Split:** 80% Train / 20% Test  
+- **Performance Metrics:**
+  - R² Score: ~0.89  
+  - MAE: ~1900 ₹  
+  - RMSE: ~2700 ₹  
+*(Values are approximate; they vary depending on training and hyperparameters.)*
+
+The model achieves strong predictive performance and provides transparent insights through explainability visuals.
+
+---
+
+## 🧾 How to Run Locally
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/yourusername/flight-price-predictor.git
+   cd flight-price-predictor
