@@ -146,7 +146,7 @@ with tab1:
         price_pred = model.predict(input_transformed)[0]
 
         with st.expander("🧾 Input Summary"):
-        st.dataframe(input_df)
+            st.dataframe(input_df)
 
         st.subheader("💰 Predicted Flight Price")
         st.success(f"Estimated Price: ₹ {price_pred:,.2f}")
