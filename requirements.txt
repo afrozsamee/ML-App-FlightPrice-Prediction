@@ -3,7 +3,7 @@ streamlit
 numpy
 pandas
 scikit-learn
-matplotlib.pyplot
+matplotlib
 xgboost
 openpyxl
 
