@@ -1,27 +1,41 @@
 import streamlit as st
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
 from xgboost import XGBRegressor
 
-le = LabelEncoder()
+# =====================
+# 🎯 PAGE CONFIG
+# =====================
+st.set_page_config(page_title="Flight Price Predictor", page_icon="✈️", layout="wide")
 
 st.title("✈️ Flight Price Prediction App")
-st.info("Predict flight ticket prices using XGBoost!")
+st.caption("Built with ❤️ using Streamlit + XGBoost")
+st.info("Predict flight ticket prices and view model validation & explainability insights.")
 
-# LOAD DATA
+# =====================
+# 📂 LOAD DATA
+# =====================
 @st.cache_data
 def load_data():
-    df = pd.read_excel("https://github.com/afrozsamee/Predictions_price_of_FlightTickets/raw/master/Data_Train.xlsx")
+    df = pd.read_excel(
+        "https://github.com/afrozsamee/Predictions_price_of_FlightTickets/raw/master/Data_Train.xlsx"
+    )
     return df
 
 df = load_data()
 
-# ========== DATA PREVIEW ==========
-with st.expander("Dataset Preview"):
+with st.expander("📊 Dataset Preview"):
     st.dataframe(df.head())
 
-# ========== FEATURE ENGINEERING ==========
+# =====================
+# ⚙️ PREPROCESS FUNCTION
+# =====================
+le = LabelEncoder()
+
 def preprocess(data):
     data = data.copy()
     data.dropna(inplace=True)
@@ -59,64 +73,120 @@ def preprocess(data):
 
 df_processed = preprocess(df)
 
+# =====================
+# 🔢 TRAIN-TEST SPLIT
+# =====================
 X = df_processed.drop("Price", axis=1)
 y = df_processed["Price"]
 
-# ========== SIDEBAR INPUTS ==========
-with st.sidebar:
-    st.header("✈️ Enter Flight Details")
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-    Airline = st.selectbox("Airline", df["Airline"].unique())
-    Source = st.selectbox("Source", df["Source"].unique())
-    Destination = st.selectbox("Destination", df["Destination"].unique())
-    Total_Stops = st.selectbox("Stops", df["Total_Stops"].unique())
-    Additional_Info = st.selectbox("Additional Info", df["Additional_Info"].unique())
+# =====================
+# 🧠 TRAIN MODEL
+# =====================
+model = XGBRegressor(n_estimators=500, learning_rate=0.1, random_state=42)
+model.fit(X_train, y_train)
 
-    # Raw date input
-    Date_of_Journey = st.date_input("Date of Journey")
+# =====================
+# 📈 MODEL VALIDATION
+# =====================
+y_pred = model.predict(X_test)
+r2 = r2_score(y_test, y_pred)
+mae = mean_absolute_error(y_test, y_pred)
+rmse = np.sqrt(mean_squared_error(y_test, y_pred))
 
-    # Time selectors formatted as the dataset requires
-    Dep_Time = st.time_input("Departure Time")
-    Arrival_Time = st.time_input("Arrival Time")
+# =====================
+# 🧭 TABS LAYOUT
+# =====================
+tab1, tab2, tab3 = st.tabs(["💡 Predict", "📊 Validation", "🔍 Explainability"])
 
-    # Duration (raw format to match dataset)
-    Dur_Hour = st.number_input("Duration Hours", min_value=0, max_value=50, value=2)
-    Dur_Min = st.number_input("Duration Minutes", min_value=0, max_value=59, value=30)
+# =====================
+# ✈️ TAB 1 — PREDICTION
+# =====================
+with tab1:
+    st.header("💡 Enter Flight Details")
 
-    Duration = f"{int(Dur_Hour)}h {int(Dur_Min)}m"
+    with st.sidebar:
+        st.subheader("🧾 Flight Information")
 
-    input_data = {
-        "Airline": Airline,
-        "Date_of_Journey": Date_of_Journey.strftime("%d/%m/%Y"),
-        "Source": Source,
-        "Destination": Destination,
-        "Route": "Not Available",
-        "Dep_Time": Dep_Time.strftime("%H:%M"),
-        "Arrival_Time": Arrival_Time.strftime("%H:%M"),
-        "Duration": Duration,
-        "Total_Stops": Total_Stops,
-        "Additional_Info": Additional_Info
-    }
+        Airline = st.selectbox("Airline", df["Airline"].unique())
+        Source = st.selectbox("Source", df["Source"].unique())
+        Destination = st.selectbox("Destination", df["Destination"].unique())
+        Total_Stops = st.selectbox("Stops", df["Total_Stops"].unique())
+        Additional_Info = st.selectbox("Additional Info", df["Additional_Info"].unique())
 
-    input_df = pd.DataFrame([input_data])
+        Date_of_Journey = st.date_input("Date of Journey")
+        Dep_Time = st.time_input("Departure Time")
+        Arrival_Time = st.time_input("Arrival Time")
 
-# Preprocess input by appending to df
-input_transformed = preprocess(pd.concat([df.drop("Price", axis=1), input_df], axis=0)).tail(1)
+        Dur_Hour = st.number_input("Duration Hours", min_value=0, max_value=50, value=2)
+        Dur_Min = st.number_input("Duration Minutes", min_value=0, max_value=59, value=30)
+        Duration = f"{int(Dur_Hour)}h {int(Dur_Min)}m"
 
+        # Input as DataFrame
+        input_data = {
+            "Airline": Airline,
+            "Date_of_Journey": Date_of_Journey.strftime("%d/%m/%Y"),
+            "Source": Source,
+            "Destination": Destination,
+            "Route": "Not Available",
+            "Dep_Time": Dep_Time.strftime("%H:%M"),
+            "Arrival_Time": Arrival_Time.strftime("%H:%M"),
+            "Duration": Duration,
+            "Total_Stops": Total_Stops,
+            "Additional_Info": Additional_Info,
+        }
+        input_df = pd.DataFrame([input_data])
 
-# ========== SHOW INPUT ==========
-with st.expander("User Input Preview"):
-    st.dataframe(input_df)
+    with st.expander("🧾 Input Summary"):
+        st.dataframe(input_df)
 
-# ========== MODEL TRAINING ==========
-model = XGBRegressor(n_estimators=500, learning_rate=0.1)
-model.fit(X, y)
+    if st.button("🎯 Predict Price"):
+        input_transformed = preprocess(pd.concat([df.drop("Price", axis=1), input_df], axis=0)).tail(1)
+        input_transformed = input_transformed[X.columns]
+        price_pred = model.predict(input_transformed)[0]
 
-# ========== PREDICTION ==========
-# align columns to training data
-input_transformed = input_transformed[X.columns]
-price_pred = model.predict(input_transformed)[0]
+        st.subheader("💰 Predicted Flight Price")
+        st.success(f"Estimated Price: ₹ {price_pred:,.2f}")
 
-# ========== RESULT ==========
-st.subheader("💰 Predicted Flight Price")
-st.success(f"₹ {price_pred:,.2f}")
+        # Downloadable report
+        import io
+        output = io.StringIO()
+        input_df["Predicted Price"] = [price_pred]
+        input_df.to_csv(output, index=False)
+        st.download_button(
+            "⬇️ Download Prediction Report",
+            data=output.getvalue(),
+            file_name="flight_price_prediction.csv",
+            mime="text/csv",
+        )
+
+# =====================
+# 📊 TAB 2 — VALIDATION
+# =====================
+with tab2:
+    st.header("📊 Model Performance Validation")
+    col1, col2, col3 = st.columns(3)
+    col1.metric("R² Score", f"{r2:.3f}")
+    col2.metric("MAE", f"{mae:,.0f}")
+    col3.metric("RMSE", f"{rmse:,.0f}")
+
+    fig, ax = plt.subplots()
+    ax.scatter(y_test, y_pred, alpha=0.5)
+    ax.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], 'r--')
+    ax.set_xlabel("Actual Price")
+    ax.set_ylabel("Predicted Price")
+    ax.set_title("Actual vs Predicted Flight Prices")
+    st.pyplot(fig)
+
+# =====================
+# 🔍 TAB 3 — EXPLAINABILITY
+# =====================
+with tab3:
+    st.header("🔍 Feature Importance (Explainability)")
+    importances = model.feature_importances_
+    feat_imp = pd.DataFrame({"Feature": X.columns, "Importance": importances}).sort_values(
+        "Importance", ascending=False
+    )
+    st.bar_chart(feat_imp.set_index("Feature"))
+    st.caption("Features with higher importance have a stronger impact on price prediction.")
