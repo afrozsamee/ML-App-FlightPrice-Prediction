@@ -1,10 +1,10 @@
 # 🧠 Core dependencies for Flight Price Prediction App
-streamlit>=1.26,<2.0
-numpy>=1.23
-pandas>=1.5
-scikit-learn>=1.2
-matplotlib>=3.8.0
-xgboost>=2.0
+streamlit
+numpy
+pandas
+scikit-learn
+matplotlib
+xgboost
 openpyxl
-typing-extensions>=4.5
+
 
