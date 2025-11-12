@@ -138,13 +138,15 @@ with tab1:
         }
         input_df = pd.DataFrame([input_data])
 
-    with st.expander("🧾 Input Summary"):
-        st.dataframe(input_df)
+    
 
     if st.button("🎯 Predict Price"):
         input_transformed = preprocess(pd.concat([df.drop("Price", axis=1), input_df], axis=0)).tail(1)
         input_transformed = input_transformed[X.columns]
         price_pred = model.predict(input_transformed)[0]
+
+        with st.expander("🧾 Input Summary"):
+        st.dataframe(input_df)
 
         st.subheader("💰 Predicted Flight Price")
         st.success(f"Estimated Price: ₹ {price_pred:,.2f}")
