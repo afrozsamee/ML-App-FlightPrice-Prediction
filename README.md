@@ -7,8 +7,9 @@ This project demonstrates **data preprocessing, feature engineering, model valid
 
 ## 🚀 Demo App
 
-[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://your-streamlit-app-link-here.streamlit.app)
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://ml-app-flightprice-prediction-2m6grhlmvnfbqp2iw2natn.streamlit.app/)
 
+👉 **Click the badge above to open the live deployed app.**
 
 ---
 
